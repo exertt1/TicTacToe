@@ -1,0 +1,8 @@
+#ENVIRONMENT
+.env
+
+#Go workplace file
+go.sum
+
+# IDE
+.idea/
