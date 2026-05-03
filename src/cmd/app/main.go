@@ -1,50 +1,42 @@
 package main
 
 import (
-	"log/slog"
-	"myproject/internal/config"
-	"os"
-)
+	"TicTacToe/di"
+	"TicTacToe/storage/config"
+	"context"
+	"log"
+	"os/signal"
+	"syscall"
 
-const (
-	envLocal = "local"
-	envDev   = "dev"
-	envProd  = "prod"
+	"go.uber.org/fx"
 )
 
 func main() {
-	cfg := config.MustLoad()
+	cfg, err := config.Load()
 
-	log := setupLogger(cfg.Env)
-
-	log.Info("starting my project")
-
-}
-func setupLogger(env string) *slog.Logger {
-	var log *slog.Logger
-
-	switch env {
-	case envLocal:
-		log = slog.New(
-			slog.NewTextHandler(
-				os.Stdout,
-				&slog.HandlerOptions{Level: slog.LevelDebug},
-			),
-		)
-	case envDev:
-		log = slog.New(
-			slog.NewTextHandler(
-				os.Stdout,
-				&slog.HandlerOptions{Level: slog.LevelDebug},
-			),
-		)
-	case envProd:
-		log = slog.New(
-			slog.NewTextHandler(
-				os.Stdout,
-				&slog.HandlerOptions{Level: slog.LevelInfo},
-			),
-		)
+	if err != nil {
+		panic(err.Error())
 	}
-	return log
+
+	app := fx.New(
+		fx.Provide(func() *config.DataBaseConfig { return cfg }),
+		di.Module,
+	)
+
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	if err := app.Start(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	<-ctx.Done()
+
+	if err := app.Stop(ctx); err != nil {
+		log.Fatal(err)
+	}
 }

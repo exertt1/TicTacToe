@@ -1,0 +1,6 @@
+host: localhost
+port: 5432
+user: postgres
+password: 3500863aaAA
+db_name: tictactoe_db
+max_connections: 100
